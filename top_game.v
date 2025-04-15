@@ -28,6 +28,11 @@ module top_game(
         end
     end
 
+    reg [1:0] prev_level_select;
+    wire level_complete;
+    wire [7:0] score;
+
+    
     // Player state
     reg [10:0] blkpos_x = 11'd394;
     reg [10:0] blkpos_y = 11'd41;
@@ -44,6 +49,14 @@ module top_game(
         .player_col(current_col),
         .level_select(level_select)
     );
+
+    score_counter score_counter_inst (
+    .clk(game_clk),
+    .rst(rst),
+    .level_complete(level_complete),
+    .score(score)
+);
+
 
     // Level 1
     wire [9:0] TILE_W1, TILE_H1, WALL_MARGIN1;
@@ -136,6 +149,17 @@ module top_game(
             endcase
         end
     end
+
+    // Pulse level_complete when FSM level changes
+    always @(posedge game_clk or posedge rst) begin
+        if (rst) begin
+            prev_level_select <= 2'd0;
+        end else begin
+            prev_level_select <= level_select;
+        end
+    end
+    
+    assign level_complete = (level_select != prev_level_select);
 
     // VGA drawing
     wire [3:0] draw_r, draw_g, draw_b;
