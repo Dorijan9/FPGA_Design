@@ -1,11 +1,11 @@
 module score_counter (
-    input logic clk,
-    input logic rst,
-    input logic level_complete,  
-    output logic [7:0] score    
+    input clk,
+    input rst,
+    input level_complete,
+    output reg [7:0] score
 );
 
-    always_ff @(posedge clk or posedge rst) begin
+    always @(posedge clk or posedge rst) begin
         if (rst)
             score <= 8'd0;
         else if (level_complete)
