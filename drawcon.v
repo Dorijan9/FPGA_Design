@@ -8,10 +8,14 @@ module drawcon(
     output [3:0] draw_g,
     output [3:0] draw_b,
     input [10:0] curr_x,
-    input [10:0] curr_y,
-    input [10:0] score_x,
-    input [10:0] score_y
+    input [10:0] curr_y
 );
+
+    // Image drawing parameters
+    parameter ID_X_OFFSET = 11'd1350;
+    parameter ID_Y_OFFSET = 11'd120;
+    parameter ID_WIDTH = 11'd128;
+    parameter ID_HEIGHT = 11'd64;
 
     // Final tile dimensions (selected per level)
     reg [9:0] TILE_W, TILE_H, WALL_MARGIN;
@@ -23,20 +27,15 @@ module drawcon(
     wire [8:0] x_in_tile;
     wire [8:0] y_in_tile;
 
-
-    parameter SCORE_W  = 10'd160;
-    parameter SCORE_H = 10'd32;
-
     assign maze_col = curr_x / TILE_W;
-    assign maze_row = curr_y / TILE_H;
+    assign maze_row = (curr_y - 11'd100) / TILE_H;
     assign x_in_tile = curr_x % TILE_W;
-    assign y_in_tile = curr_y % TILE_H;
+    assign y_in_tile = (curr_y - 11'd100) % TILE_H;
 
     // Level tile outputs
     wire [3:0] walls_l1, walls_l2;
     wire [9:0] TILE_W1, TILE_H1, WALL_MARGIN1;
     wire [4:0] NUM_ROWS1, NUM_COLS1;
-
     wire [9:0] TILE_W2, TILE_H2, WALL_MARGIN2;
     wire [4:0] NUM_ROWS2, NUM_COLS2;
 
@@ -99,25 +98,40 @@ module drawcon(
     assign draw_g = draw_g_reg;
     assign draw_b = draw_b_reg;
 
-    always @(posedge clk) begin
-        // Background = blue
+    reg [12:0] id_addr;
+    wire [11:0] id_pixel;
+
+    blk_mem_gen_0 id_image_rom (
+        .clka(clk),
+        .addra(id_addr),
+        .douta(id_pixel)
+    );
+
+    always @(*) begin
         draw_r_reg = 4'd0;
         draw_g_reg = 4'd0;
         draw_b_reg = 4'd15;
-     if (level_select <= 2'd1 &&
-        curr_x >= score_x && curr_x < score_x + SCORE_W &&
-        curr_y >= score_y && curr_y < score_y + SCORE_H)
-    begin
-        addr <= (curr_y - score_y) * SCORE_W + (curr_x - score_x);
-        draw_r_reg = rom_pixel[11:8];
-        draw_g_reg = rom_pixel[7:4];
-        draw_b_reg = rom_pixel[3:0];
-    end else begin
-        addr <= 17'd0;
+
+        id_addr = 13'd0;
+
+        if ((curr_x >= ID_X_OFFSET) && (curr_x < ID_X_OFFSET + ID_WIDTH) &&
+            (curr_y >= ID_Y_OFFSET) && (curr_y < ID_Y_OFFSET + ID_HEIGHT)) begin
+            draw_r_reg = id_pixel[11:8];
+            draw_g_reg = id_pixel[7:4];
+            draw_b_reg = id_pixel[3:0];
+            if (id_addr == (curr_y - ID_Y_OFFSET) * ID_WIDTH + (curr_x - ID_X_OFFSET))
+            id_addr <= 0;
+            else 
+            id_addr <= id_addr + 1;
+
         end
-       
-        // Maze wall = red
-        if (maze_col < NUM_COLS && maze_row < NUM_ROWS) begin
+        else if ((curr_x >= blkpos_x) && (curr_x < blkpos_x + 10) &&
+                 (curr_y >= blkpos_y) && (curr_y < blkpos_y + 10)) begin
+            draw_r_reg = 4'd0;
+            draw_g_reg = 4'd15;
+            draw_b_reg = 4'd0;
+        end
+        else if (maze_col < NUM_COLS && maze_row < NUM_ROWS) begin
             if (walls[3] && y_in_tile < WALL_MARGIN)
                 draw_r_reg = 4'd15;
             else if (walls[2] && y_in_tile >= TILE_H - WALL_MARGIN)
@@ -127,23 +141,8 @@ module drawcon(
             else if (walls[0] && x_in_tile >= TILE_W - WALL_MARGIN)
                 draw_r_reg = 4'd15;
         end
-
-        // Player block = green
-        if ((curr_x >= blkpos_x) && (curr_x < blkpos_x + 10) &&
-            (curr_y >= blkpos_y) && (curr_y < blkpos_y + 10)) begin
-            draw_r_reg = 4'd0;
-            draw_g_reg = 4'd15;
-            draw_b_reg = 4'd0;
-        end
     end
-    reg[16:0] addr;
-    wire[11:0] rom_pixel;
-    blk_mem_gen_0 score_num(
-        .clka(clk),
-        .addra(addr),
-        .douta(rom_pixel)
-    );
 
-       
-      
 endmodule
+
+
