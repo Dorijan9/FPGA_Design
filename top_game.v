@@ -2,6 +2,7 @@ module top_game(
     input clk,
     input rst,
     input [4:0] btn,
+    input [15:0] sw,
     output [3:0] pix_r,
     output [3:0] pix_g,
     output [3:0] pix_b,
