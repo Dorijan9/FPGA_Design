@@ -58,10 +58,4 @@ always @(*) begin
         else
             walls = 4'b0000; // Default if out of bounds
     end
-
-
-
-
-
-
 endmodule
