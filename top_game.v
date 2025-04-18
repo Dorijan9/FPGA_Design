@@ -1,5 +1,4 @@
 `timescale 1ns / 1ps
-
 module top_game(
     input clk,
     input rst,
@@ -35,10 +34,9 @@ module top_game(
     wire level_complete;
     wire [7:0] score;
 
-    
     // Player state
     reg [10:0] blkpos_x = 11'd394;
-    reg [10:0] blkpos_y = 11'd41;
+    reg [10:0] blkpos_y = 11'd141; // initial Y with infobar offset
     reg [4:0] current_row, current_col, adj_row, adj_col;
     reg [9:0] x_in_tile, y_in_tile;
     reg [1:0] prev_level = 2'd0;
@@ -54,12 +52,11 @@ module top_game(
     );
 
     score_counter score_counter_inst (
-    .clk(game_clk),
-    .rst(rst),
-    .level_complete(level_complete),
-    .score(score)
-);
-
+        .clk(game_clk),
+        .rst(rst),
+        .level_complete(level_complete),
+        .score(score)
+    );
 
     // Level 1
     wire [9:0] TILE_W1, TILE_H1, WALL_MARGIN1;
@@ -92,17 +89,11 @@ module top_game(
         endcase
     end
 
-    // Wall outputs
-    wire [3:0] walls_curr_l1, walls_adj_l1;
-    wire [3:0] walls_curr_l2, walls_adj_l2;
-    wire [3:0] walls_curr_l3, walls_adj_l3;
-
+    wire [3:0] walls_curr_l1, walls_adj_l1, walls_curr_l2, walls_adj_l2, walls_curr_l3, walls_adj_l3;
     level1 l1_cur (.row(current_row), .col(current_col), .walls(walls_curr_l1), .TILE_W(), .TILE_H(), .NUM_ROWS(), .NUM_COLS(), .WALL_MARGIN());
     level1 l1_adj (.row(adj_row),     .col(adj_col),     .walls(walls_adj_l1),  .TILE_W(), .TILE_H(), .NUM_ROWS(), .NUM_COLS(), .WALL_MARGIN());
-
     level2 l2_cur (.row(current_row), .col(current_col), .walls(walls_curr_l2), .TILE_W(), .TILE_H(), .NUM_ROWS(), .NUM_COLS(), .WALL_MARGIN());
     level2 l2_adj (.row(adj_row),     .col(adj_col),     .walls(walls_adj_l2),  .TILE_W(), .TILE_H(), .NUM_ROWS(), .NUM_COLS(), .WALL_MARGIN());
-
     level3 l3_cur (.row(current_row), .col(current_col), .walls(walls_curr_l3), .TILE_W(), .TILE_H(), .NUM_ROWS(), .NUM_COLS(), .WALL_MARGIN());
     level3 l3_adj (.row(adj_row),     .col(adj_col),     .walls(walls_adj_l3),  .TILE_W(), .TILE_H(), .NUM_ROWS(), .NUM_COLS(), .WALL_MARGIN());
 
@@ -121,18 +112,18 @@ module top_game(
     always @(posedge game_clk) begin
         if (level_select != prev_level) begin
             blkpos_x <= 11'd394;
-            blkpos_y <= 11'd41;
+            blkpos_y <= 11'd141;
             prev_level <= level_select;
         end else if (!rst || btn[0]) begin
             blkpos_x <= 11'd394;
-            blkpos_y <= 11'd41;
+            blkpos_y <= 11'd141;
         end else begin
             prev_level <= level_select;
 
             current_col = blkpos_x / TILE_W;
-            current_row = blkpos_y / TILE_H;
+            current_row = (blkpos_y - 11'd100) / TILE_H;
             x_in_tile   = blkpos_x % TILE_W;
-            y_in_tile   = blkpos_y % TILE_H;
+            y_in_tile   = (blkpos_y - 11'd100) % TILE_H;
 
             adj_col = current_col;
             adj_row = current_row;
@@ -153,7 +144,6 @@ module top_game(
         end
     end
 
-    // Pulse level_complete when FSM level changes
     always @(posedge game_clk or posedge rst) begin
         if (rst) begin
             prev_level_select <= 2'd0;
@@ -161,7 +151,7 @@ module top_game(
             prev_level_select <= level_select;
         end
     end
-    
+
     assign level_complete = (level_select != prev_level_select);
 
     // VGA drawing
@@ -197,3 +187,4 @@ module top_game(
     );
 
 endmodule
+
