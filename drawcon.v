@@ -39,6 +39,17 @@ module drawcon(
     wire [9:0] TILE_W2, TILE_H2, WALL_MARGIN2;
     wire [4:0] NUM_ROWS2, NUM_COLS2;
 
+    // ROM output and address for Pac-Man image (blk_mem_gen_0)
+    wire [11:0] pacman_pixel;
+    reg [11:0] pacman_addr;
+
+    pacman_rom pacman_sprite (
+        .addra(pacman_addr),
+        .clka(clk),
+        .ena(1'b1),
+        .douta(pacman_pixel)
+    );
+
     level1 level1_inst (
         .row(maze_row),
         .col(maze_col),
@@ -98,39 +109,17 @@ module drawcon(
     assign draw_g = draw_g_reg;
     assign draw_b = draw_b_reg;
 
-    reg [12:0] id_addr;
-    wire [11:0] id_pixel;
-
-    blk_mem_gen_0 id_image_rom (
-        .clka(clk),
-        .ena(1'b1),  
-        .addra(id_addr),
-        .douta(id_pixel)
-    );
-
     always @(*) begin
         draw_r_reg = 4'd0;
         draw_g_reg = 4'd0;
         draw_b_reg = 4'd15;
 
-        id_addr = 13'd0;
-
-        if ((curr_x >= ID_X_OFFSET) && (curr_x < ID_X_OFFSET + ID_WIDTH) &&
-            (curr_y >= ID_Y_OFFSET) && (curr_y < ID_Y_OFFSET + ID_HEIGHT)) begin
-            draw_r_reg = id_pixel[11:8];
-            draw_g_reg = id_pixel[7:4];
-            draw_b_reg = id_pixel[3:0];
-            if (id_addr == (curr_y - ID_Y_OFFSET) * ID_WIDTH + (curr_x - ID_X_OFFSET))
-            id_addr <= 0;
-            else 
-            id_addr <= id_addr + 1;
-
-        end
-        else if ((curr_x >= blkpos_x) && (curr_x < blkpos_x + 10) &&
-                 (curr_y >= blkpos_y) && (curr_y < blkpos_y + 10)) begin
-            draw_r_reg = 4'd0;
-            draw_g_reg = 4'd15;
-            draw_b_reg = 4'd0;
+        if ((curr_x >= blkpos_x) && (curr_x < blkpos_x + 8) &&
+            (curr_y >= blkpos_y) && (curr_y < blkpos_y + 8)) begin
+            pacman_addr = (curr_y - blkpos_y) * 8 + (curr_x - blkpos_x);
+            draw_r_reg = 4'h8;
+            draw_g_reg = 4'h8;
+            draw_b_reg = 4'h0;
         end
         else if (maze_col < NUM_COLS && maze_row < NUM_ROWS) begin
             if (walls[3] && y_in_tile < WALL_MARGIN)
