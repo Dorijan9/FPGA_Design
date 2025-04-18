@@ -103,6 +103,7 @@ module drawcon(
 
     blk_mem_gen_0 id_image_rom (
         .clka(clk),
+        .ena(1'b1),  
         .addra(id_addr),
         .douta(id_pixel)
     );
@@ -144,5 +145,3 @@ module drawcon(
     end
 
 endmodule
-
-
