@@ -5,6 +5,7 @@ module drawcon(
     input clk,
     input rst,
     input [1:0] level_select,
+    output wire [255:0] pixel_block,  
     output [3:0] draw_r,
     output [3:0] draw_g,
     output [3:0] draw_b,
@@ -21,6 +22,9 @@ module drawcon(
     // Final tile dimensions (selected per level)
     reg [9:0] TILE_W, TILE_H, WALL_MARGIN;
     reg [4:0] NUM_ROWS, NUM_COLS;
+    
+    //pacman
+    reg [9:0] pixel_addr;
 
     // Common tile position (updated after TILE_W/H assignment)
     wire [4:0] maze_col;
@@ -41,16 +45,12 @@ module drawcon(
     wire [4:0] NUM_ROWS2, NUM_COLS2;
     wire [9:0] TILE_W3, TILE_H3, WALL_MARGIN3;
     wire [4:0] NUM_ROWS3, NUM_COLS3;
-
-    // ROM output and address for Pac-Man image (blk_mem_gen_0)
-    wire [11:0] pacman_pixel;
-    reg [11:0] pacman_addr;
-
-    pacman_rom pacman_sprite (
-        .addra(pacman_addr),
+    
+    pacman_rom pacman_rom_inst (
+        .addra(pixel_addr),
         .clka(clk),
         .ena(1'b1),
-        .douta(pacman_pixel)
+        .douta(pixel_block)
     );
 
     level1 level1_inst (
@@ -90,12 +90,13 @@ module drawcon(
     reg [12:0] id_addr;
     wire [11:0] id_pixel;
     wire [7:0] score;
+    
     blk_mem_gen_0 id_image_rom (
-        .clka(clk),
-        .ena(1'b1),  
-        .addra(id_addr),
-        .douta(id_pixel)
-    );
+         .clka(clk),
+         .ena(1'b1),  
+         .addra(id_addr),
+         .douta(id_pixel)
+     );
 
     always @(*) begin
         case (level_select)
@@ -147,24 +148,24 @@ module drawcon(
 
         if ((curr_x >= blkpos_x) && (curr_x < blkpos_x + 8) &&
             (curr_y >= blkpos_y) && (curr_y < blkpos_y + 8)) begin
-            pacman_addr = (curr_y - blkpos_y) * 8 + (curr_x - blkpos_x);
+            pixel_addr = (curr_y - blkpos_y) * 8 + (curr_x - blkpos_x);
             draw_r_reg = 4'h8;
             draw_g_reg = 4'h8;
             draw_b_reg = 4'h0;
-        
-        end
-          id_addr = 13'd0;
-
-        if ((curr_x >= ID_X_OFFSET) && (curr_x < ID_X_OFFSET + ID_WIDTH) &&
-            (curr_y >= ID_Y_OFFSET) && (curr_y < ID_Y_OFFSET + ID_HEIGHT) ) begin
-            draw_r_reg = id_pixel[11:8];
-            draw_g_reg = id_pixel[7:4];
-            draw_b_reg = id_pixel[3:0];
-            if (id_addr == (curr_y - ID_Y_OFFSET) * ID_WIDTH + (curr_x - ID_X_OFFSET))
-            id_addr <= 0;
-            else 
-            id_addr <= id_addr + 1;
-
+                    
+         end
+         
+           id_addr = 13'd0;
+ 
+         if ((curr_x >= ID_X_OFFSET) && (curr_x < ID_X_OFFSET + ID_WIDTH) &&
+             (curr_y >= ID_Y_OFFSET) && (curr_y < ID_Y_OFFSET + ID_HEIGHT) ) begin
+             draw_r_reg = id_pixel[11:8];
+             draw_g_reg = id_pixel[7:4];
+             draw_b_reg = id_pixel[3:0];
+             if (id_addr == (curr_y - ID_Y_OFFSET) * ID_WIDTH + (curr_x - ID_X_OFFSET))
+             id_addr <= 0;
+             else 
+             id_addr <= id_addr + 1;
         end
         else if (maze_col < NUM_COLS && maze_row < NUM_ROWS) begin
             if (walls[3] && y_in_tile < WALL_MARGIN)
