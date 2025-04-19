@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 module drawcon(
     input [10:0] blkpos_x,
     input [10:0] blkpos_y,
@@ -33,11 +34,13 @@ module drawcon(
     assign y_in_tile = (curr_y - 11'd100) % TILE_H;
 
     // Level tile outputs
-    wire [3:0] walls_l1, walls_l2;
+    wire [3:0] walls_l1, walls_l2, walls_13;
     wire [9:0] TILE_W1, TILE_H1, WALL_MARGIN1;
     wire [4:0] NUM_ROWS1, NUM_COLS1;
     wire [9:0] TILE_W2, TILE_H2, WALL_MARGIN2;
     wire [4:0] NUM_ROWS2, NUM_COLS2;
+    wire [9:0] TILE_W3, TILE_H3, WALL_MARGIN3;
+    wire [4:0] NUM_ROWS3, NUM_COLS3;
 
     // ROM output and address for Pac-Man image (blk_mem_gen_0)
     wire [11:0] pacman_pixel;
@@ -71,6 +74,17 @@ module drawcon(
         .NUM_COLS(NUM_COLS2),
         .WALL_MARGIN(WALL_MARGIN2)
     );
+    
+    level3 level3_inst (
+    .row(maze_row),
+    .col(maze_col),
+    .walls(walls_13),
+    .TILE_W(TILE_W3),
+    .TILE_H(TILE_H3),
+    .NUM_ROWS(NUM_ROWS3),
+    .NUM_COLS(NUM_COLS3),
+    .WALL_MARGIN(WALL_MARGIN3)
+    );
 
     reg [3:0] walls;
 
@@ -92,6 +106,14 @@ module drawcon(
                 NUM_COLS    = NUM_COLS2;
                 walls       = walls_l2;
             end
+            2'd2: begin
+                TILE_W      = TILE_W3;
+                TILE_H      = TILE_H3;
+                WALL_MARGIN = WALL_MARGIN3;
+                NUM_ROWS    = NUM_ROWS3;
+                NUM_COLS    = NUM_COLS3;
+                walls       = walls_13;
+             end
             default: begin
                 TILE_W      = 10'd1;
                 TILE_H      = 10'd1;
