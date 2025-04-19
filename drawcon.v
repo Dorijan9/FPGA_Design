@@ -87,6 +87,15 @@ module drawcon(
     );
 
     reg [3:0] walls;
+    reg [12:0] id_addr;
+    wire [11:0] id_pixel;
+    wire [7:0] score;
+    blk_mem_gen_0 id_image_rom (
+        .clka(clk),
+        .ena(1'b1),  
+        .addra(id_addr),
+        .douta(id_pixel)
+    );
 
     always @(*) begin
         case (level_select)
@@ -142,6 +151,20 @@ module drawcon(
             draw_r_reg = 4'h8;
             draw_g_reg = 4'h8;
             draw_b_reg = 4'h0;
+        
+        end
+          id_addr = 13'd0;
+
+        if ((curr_x >= ID_X_OFFSET) && (curr_x < ID_X_OFFSET + ID_WIDTH) &&
+            (curr_y >= ID_Y_OFFSET) && (curr_y < ID_Y_OFFSET + ID_HEIGHT) ) begin
+            draw_r_reg = id_pixel[11:8];
+            draw_g_reg = id_pixel[7:4];
+            draw_b_reg = id_pixel[3:0];
+            if (id_addr == (curr_y - ID_Y_OFFSET) * ID_WIDTH + (curr_x - ID_X_OFFSET))
+            id_addr <= 0;
+            else 
+            id_addr <= id_addr + 1;
+
         end
         else if (maze_col < NUM_COLS && maze_row < NUM_ROWS) begin
             if (walls[3] && y_in_tile < WALL_MARGIN)
