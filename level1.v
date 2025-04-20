@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 module level1 (
     input  [2:0] row,
     input  [2:0] col,
@@ -15,7 +16,7 @@ module level1 (
         // Row 0
         maze[0][0] = 4'b1110;
         maze[0][1] = 4'b1100;
-        maze[0][2] = 4'b0000;
+        maze[0][2] = 4'b1000;
         maze[0][3] = 4'b1110;
         maze[0][4] = 4'b1001;
         // Row 1
