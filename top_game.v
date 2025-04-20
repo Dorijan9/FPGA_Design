@@ -11,11 +11,15 @@ module top_game(
     output vsync
 );
 
-    // Pixel clock
+    // === Block size constants ===
+    parameter BLK_SIZE_X = 100;
+    parameter BLK_SIZE_Y = 100;
+
+    // === Pixel clock ===
     wire pixclk;
     clk_wiz_0 pll (.clk_out1(pixclk), .clk_in1(clk));
 
-    // Game clock
+    // === Game clock ===
     reg [20:0] clk_div;
     reg game_clk;
     always @(posedge clk) begin
@@ -30,18 +34,19 @@ module top_game(
         end
     end
 
+    // === Level tracking ===
     reg [1:0] prev_level_select;
     wire level_complete;
     wire [7:0] score;
 
-    // Player state
+    // === Player state ===
     reg [10:0] blkpos_x = 11'd394;
-    reg [10:0] blkpos_y = 11'd141; // initial Y with infobar offset
+    reg [10:0] blkpos_y = 11'd141; // with infobar offset
     reg [4:0] current_row, current_col, adj_row, adj_col;
     reg [9:0] x_in_tile, y_in_tile;
     reg [1:0] prev_level = 2'd0;
 
-    // FSM
+    // === FSM ===
     wire [1:0] level_select;
     game_fsm fsm_inst (
         .clk(game_clk),
@@ -58,25 +63,22 @@ module top_game(
         .score(score)
     );
 
-    // Level 1
+    // === Level metadata ===
     wire [9:0] TILE_W1, TILE_H1, WALL_MARGIN1;
     wire [4:0] NUM_ROWS1, NUM_COLS1;
     wire [3:0] dummy1;
     level1 l1info (.row(5'd0), .col(5'd0), .walls(dummy1), .TILE_W(TILE_W1), .TILE_H(TILE_H1), .NUM_ROWS(NUM_ROWS1), .NUM_COLS(NUM_COLS1), .WALL_MARGIN(WALL_MARGIN1));
 
-    // Level 2
     wire [9:0] TILE_W2, TILE_H2, WALL_MARGIN2;
     wire [4:0] NUM_ROWS2, NUM_COLS2;
     wire [3:0] dummy2;
     level2 l2info (.row(5'd0), .col(5'd0), .walls(dummy2), .TILE_W(TILE_W2), .TILE_H(TILE_H2), .NUM_ROWS(NUM_ROWS2), .NUM_COLS(NUM_COLS2), .WALL_MARGIN(WALL_MARGIN2));
 
-    // Level 3
     wire [9:0] TILE_W3, TILE_H3, WALL_MARGIN3;
     wire [4:0] NUM_ROWS3, NUM_COLS3;
     wire [3:0] dummy3;
     level3 l3info (.row(5'd0), .col(5'd0), .walls(dummy3), .TILE_W(TILE_W3), .TILE_H(TILE_H3), .NUM_ROWS(NUM_ROWS3), .NUM_COLS(NUM_COLS3), .WALL_MARGIN(WALL_MARGIN3));
 
-    // Maze outputs
     reg [9:0] TILE_W, TILE_H, WALL_MARGIN;
     reg [4:0] NUM_ROWS, NUM_COLS;
 
@@ -108,7 +110,7 @@ module top_game(
         endcase
     end
 
-    // Movement + level change logic
+    // === Movement logic ===
     always @(posedge game_clk) begin
         if (level_select != prev_level) begin
             blkpos_x <= 11'd394;
@@ -129,17 +131,17 @@ module top_game(
             adj_row = current_row;
 
             case (btn[4:1])
-                4'b0001: if (current_row > 0) adj_row = current_row - 1;
-                4'b1000: if (current_row < NUM_ROWS - 1) adj_row = current_row + 1;
-                4'b0010: if (current_col > 0) adj_col = current_col - 1;
-                4'b0100: if (current_col < NUM_COLS - 1) adj_col = current_col + 1;
+                4'b0001: if (current_row > 0) adj_row = current_row - 1; // UP
+                4'b1000: if (current_row < NUM_ROWS - 1) adj_row = current_row + 1; // DOWN
+                4'b0010: if (current_col > 0) adj_col = current_col - 1; // LEFT
+                4'b0100: if (current_col < NUM_COLS - 1) adj_col = current_col + 1; // RIGHT
             endcase
 
             case (btn[4:1])
                 4'b0001: if (!(wall_curr_mux[3] && y_in_tile <= WALL_MARGIN || wall_adj_mux[2] && y_in_tile <= WALL_MARGIN)) blkpos_y <= blkpos_y - 2;
-                4'b1000: if (!(wall_curr_mux[2] && y_in_tile + 10 >= TILE_H - WALL_MARGIN || wall_adj_mux[3] && y_in_tile + 10 >= TILE_H - WALL_MARGIN)) blkpos_y <= blkpos_y + 2;
+                4'b1000: if (!(wall_curr_mux[2] && y_in_tile + BLK_SIZE_Y >= TILE_H - WALL_MARGIN || wall_adj_mux[3] && y_in_tile + BLK_SIZE_Y >= TILE_H - WALL_MARGIN)) blkpos_y <= blkpos_y + 2;
                 4'b0010: if (!(wall_curr_mux[1] && x_in_tile <= WALL_MARGIN || wall_adj_mux[0] && x_in_tile <= WALL_MARGIN)) blkpos_x <= blkpos_x - 2;
-                4'b0100: if (!(wall_curr_mux[0] && x_in_tile + 10 >= TILE_W - WALL_MARGIN || wall_adj_mux[1] && x_in_tile + 10 >= TILE_W - WALL_MARGIN)) blkpos_x <= blkpos_x + 2;
+                4'b0100: if (!(wall_curr_mux[0] && x_in_tile + BLK_SIZE_X >= TILE_W - WALL_MARGIN || wall_adj_mux[1] && x_in_tile + BLK_SIZE_X >= TILE_W - WALL_MARGIN)) blkpos_x <= blkpos_x + 2;
             endcase
         end
     end
@@ -154,7 +156,7 @@ module top_game(
 
     assign level_complete = (level_select != prev_level_select);
 
-    // VGA drawing
+    // === VGA draw ===
     wire [3:0] draw_r, draw_g, draw_b;
     wire [10:0] curr_x, curr_y;
 
@@ -187,4 +189,3 @@ module top_game(
     );
 
 endmodule
-
