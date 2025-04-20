@@ -46,6 +46,17 @@ module drawcon(
     wire [4:0] NUM_ROWS2, NUM_COLS2;
     wire [9:0] TILE_W3, TILE_H3, WALL_MARGIN3;
     wire [4:0] NUM_ROWS3, NUM_COLS3;
+    
+    // Stone texture ROM (background for maze)
+    reg [13:0] bg_pixel_addr;
+    wire [11:0] bg_pixel_block;
+    
+    stone_rom bg_inst (
+        .addra(bg_pixel_addr),
+        .clka(clk),
+        .douta(bg_pixel_block)
+    );
+
 
     // Instantiate ROM
     pacman_rom inst (
@@ -116,33 +127,43 @@ module drawcon(
         draw_r_reg <= 4'd0;
         draw_g_reg <= 4'd0;
         draw_b_reg <= 4'd0;
+        pixel_addr <= 0;
+        bg_pixel_addr <= 0;
     end else begin
+        // === Player block logic (ROM image displayed at block position) ===
         if ((curr_x >= blkpos_x) && (curr_x < blkpos_x + BLK_SIZE_X) &&
             (curr_y >= blkpos_y) && (curr_y < blkpos_y + BLK_SIZE_Y)) begin
-            // Compute image address based on pixel offset
             pixel_addr <= (curr_y - blkpos_y) * BLK_SIZE_X + (curr_x - blkpos_x);
-
-            // Show image from ROM
             draw_r_reg <= pixel_block[11:8];
             draw_g_reg <= pixel_block[7:4];
             draw_b_reg <= pixel_block[3:0];
 
+        // === Maze walls (white) ===
         end else if (maze_col < NUM_COLS && maze_row < NUM_ROWS &&
                     ((walls[3] && y_in_tile < WALL_MARGIN) ||
                      (walls[2] && y_in_tile >= TILE_H - WALL_MARGIN) ||
                      (walls[1] && x_in_tile < WALL_MARGIN) ||
                      (walls[0] && x_in_tile >= TILE_W - WALL_MARGIN))) begin
-            // Draw white walls
             draw_r_reg <= 4'd15;
             draw_g_reg <= 4'd15;
             draw_b_reg <= 4'd15;
 
+        // Maze background (stone texture)
+        end else if (maze_col < NUM_COLS && maze_row < NUM_ROWS) begin
+            bg_pixel_addr <= (maze_row * TILE_H + y_in_tile) * (NUM_COLS * TILE_W) +
+                             (maze_col * TILE_W + x_in_tile);
+        
+            draw_r_reg <= bg_pixel_block[11:8];
+            draw_g_reg <= bg_pixel_block[7:4];
+            draw_b_reg <= bg_pixel_block[3:0];
+
+
         end else begin
-            // Magenta background
             draw_r_reg <= 4'd15;
-            draw_g_reg <= 4'd0;
+            draw_g_reg <= 4'd05;
             draw_b_reg <= 4'd15;
         end
-     end
     end
+end
+
 endmodule
