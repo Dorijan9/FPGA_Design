@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 module level2(
     input  [2:0] row,
     input  [2:0] col,
@@ -8,8 +9,9 @@ module level2(
     output [2:0] NUM_COLS,
     output [9:0] WALL_MARGIN
 );
+    // Maze config constants
     assign TILE_W = 10'd288;
-    assign TILE_H = 10'd130;
+    assign TILE_H = 10'd160; // Adjusted to fill height
     assign NUM_ROWS = 3'd5;
     assign NUM_COLS = 3'd7;
     assign WALL_MARGIN = 10'd3;
@@ -17,14 +19,14 @@ module level2(
     reg [3:0] maze [0:4][0:6];  // FIXED: range [0:6] to match NUM_COLS=7
 
     initial begin
-        // Row 0
-        maze[0][0] = 4'b0110;
-        maze[0][1] = 4'b1100;
-        maze[0][2] = 4'b0000;
-        maze[0][3] = 4'b1110;
-        maze[0][4] = 4'b1001;
-        maze[0][5] = 4'b1111;
-        maze[0][6] = 4'b1111;
+    // Row 0
+    maze[0][0] = 4'b1110;
+    maze[0][1] = 4'b1100;
+    maze[0][2] = 4'b1000; 
+    maze[0][3] = 4'b1110;
+    maze[0][4] = 4'b1001;
+    maze[0][5] = 4'b1001; 
+    maze[0][6] = 4'b1001; 
 
         // Row 1
         maze[1][0] = 4'b1010;
@@ -41,7 +43,7 @@ module level2(
         maze[2][2] = 4'b0000;
         maze[2][3] = 4'b0000;
         maze[2][4] = 4'b0000;
-        maze[2][5] = 4'b1100;
+        maze[2][5] = 4'b1101;
         maze[2][6] = 4'b1111;
 
         // Row 3
