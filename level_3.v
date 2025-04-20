@@ -13,7 +13,7 @@ module level3(
     // Maze configuration: [row][col] = 4'b[T, B, L, R]
     reg [3:0] maze [0:5][0:10];
     assign TILE_W = 10'd288;
-    assign TILE_H = 10'd130;
+    assign TILE_H = 10'd160;
     assign NUM_ROWS = 5'd5;
     assign NUM_COLS = 5'd10;
     assign WALL_MARGIN = 10'd3;
@@ -28,7 +28,7 @@ initial begin
     maze[0][6] = 4'b1100;
     maze[0][7] = 4'b1000;
     maze[0][8] = 4'b1100;
-    maze[0][9] = 4'b1101;
+    maze[0][9] = 4'b1111;
     // Row 1
     maze[1][0] = 4'b1010;
     maze[1][1] = 4'b1100;
