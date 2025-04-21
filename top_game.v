@@ -19,6 +19,10 @@ module top_game(
     wire pixclk;
     clk_wiz_0 pll (.clk_out1(pixclk), .clk_in1(clk));
 
+    reg heart_collected;
+    reg heart_collected_l1, heart_collected_l2, heart_collected_l3;
+
+
     // === Game clock ===
     reg [20:0] clk_div;
     reg game_clk;
@@ -64,6 +68,7 @@ module top_game(
         .clk(game_clk),
         .rst(rst),
         .level_complete(level_complete),
+        .heart_collected(heart_collected),
         .score(score)
     );
 
@@ -151,10 +156,28 @@ module top_game(
                 4'b0100: if (!(wall_curr_mux[0] && x_in_tile + BLK_SIZE_X >= TILE_W - WALL_MARGIN || wall_adj_mux[1] && x_in_tile + BLK_SIZE_X >= TILE_W - WALL_MARGIN)) blkpos_x <= blkpos_x + 2;
             endcase
         end
+        
+        // Detect heart collection
+        heart_collected = 1'b0;
+        
+        if (level_select == 2'd0 && current_row == 5'd4 && current_col == 5'd4 && !heart_collected_l1) begin
+            heart_collected = 1'b1;
+            heart_collected_l1 = 1'b1;
+        end else if (level_select == 2'd1 && current_row == 5'd0 && current_col == 5'd0 && !heart_collected_l2) begin
+            heart_collected = 1'b1;
+            heart_collected_l2 = 1'b1;
+        end else if (level_select == 2'd2 && current_row == 5'd2 && current_col == 5'd4 && !heart_collected_l3) begin
+            heart_collected = 1'b1;
+            heart_collected_l3 = 1'b1;
+        end 
     end
 
     always @(posedge game_clk or posedge rst) begin
-        if (rst) begin
+    if (rst) begin
+        heart_collected_l1 <= 0;
+        heart_collected_l2 <= 0;
+        heart_collected_l3 <= 0;
+    end else if (rst) begin
             prev_level_select <= 2'd0;
         end else begin
             prev_level_select <= level_select;
