@@ -76,6 +76,17 @@ infobar_rom infobar_rom (
     .douta(info_pixel)
 );
 
+// Heart image ROM (100x100)
+reg [13:0] heart_pixel_addr;
+wire [11:0] heart_pixel;
+
+heart_rom heart_inst (
+    .addra(heart_pixel_addr),
+    .clka(clk),
+    .douta(heart_pixel)
+);
+
+
 // Stone texture ROM (background for maze)
 reg [13:0] bg_pixel_addr;
 wire [11:0] bg_pixel_block;
@@ -183,7 +194,31 @@ always @(posedge clk) begin
             draw_r_reg <= chest_pixel[11:8];
             draw_g_reg <= chest_pixel[7:4];
             draw_b_reg <= chest_pixel[3:0];
+            
+            // Heart image in bottom-right tile of level 1
+        end else if (level_select == 2'd0 && maze_row == 4 && maze_col == 4 &&
+                     x_in_tile < 100 && y_in_tile < 100) begin
+            heart_pixel_addr <= y_in_tile * 100 + x_in_tile;
+            draw_r_reg <= heart_pixel[11:8];
+            draw_g_reg <= heart_pixel[7:4];
+            draw_b_reg <= heart_pixel[3:0];
 
+        // Heart image in top-left tile of level 2
+        end else if (level_select == 2'd1 && maze_row == 0 && maze_col == 0 &&
+                     x_in_tile < 100 && y_in_tile < 100) begin
+            heart_pixel_addr <= y_in_tile * 100 + x_in_tile;
+            draw_r_reg <= heart_pixel[11:8];
+            draw_g_reg <= heart_pixel[7:4];
+            draw_b_reg <= heart_pixel[3:0];
+            
+        // Heart image in center-right tile of level 3
+        end else if (level_select == 2'd2 && maze_row == 2 && maze_col == 4 &&
+                     x_in_tile < 100 && y_in_tile < 100) begin
+            heart_pixel_addr <= y_in_tile * 100 + x_in_tile;
+            draw_r_reg <= heart_pixel[11:8];
+            draw_g_reg <= heart_pixel[7:4];
+            draw_b_reg <= heart_pixel[3:0];
+        
         // Maze wall drawing
         end else if (maze_col < NUM_COLS && maze_row < NUM_ROWS &&
                     ((walls[3] && y_in_tile < WALL_MARGIN) ||
