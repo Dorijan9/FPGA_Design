@@ -21,7 +21,7 @@ module game_fsm(
         end else begin
             case (level_select)
                 LEVEL1:
-                    if (player_row == 5'd4 && player_col == 5'd2)
+                    if (player_row == 5'd5 && player_col == 5'd2)
                         level_select <= LEVEL2;
 
                 LEVEL2:
