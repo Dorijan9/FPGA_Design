@@ -48,13 +48,17 @@ module top_game(
 
     // === FSM ===
     wire [1:0] level_select;
+    wire win;
+
     game_fsm fsm_inst (
         .clk(game_clk),
         .rst(rst),
         .player_row(current_row),
         .player_col(current_col),
-        .level_select(level_select)
+        .level_select(level_select),
+        .win(win)
     );
+
 
     score_counter score_counter_inst (
         .clk(game_clk),
@@ -112,7 +116,10 @@ module top_game(
 
     // === Movement logic ===
     always @(posedge game_clk) begin
-        if (level_select != prev_level) begin
+            if (win) begin
+            blkpos_x <= blkpos_x;
+            blkpos_y <= blkpos_y;
+        end else if (level_select != prev_level) begin
             blkpos_x <= 11'd394;
             blkpos_y <= 11'd141;
             prev_level <= level_select;
@@ -160,18 +167,56 @@ module top_game(
     wire [3:0] draw_r, draw_g, draw_b;
     wire [10:0] curr_x, curr_y;
 
+    wire [3:0] draw_r_normal, draw_g_normal, draw_b_normal;
+    wire [3:0] draw_r_win, draw_g_win, draw_b_win;
+    
     drawcon drawcon_inst (
         .blkpos_x(blkpos_x),
         .blkpos_y(blkpos_y),
         .clk(clk),
         .rst(rst),
         .level_select(level_select),
-        .draw_r(draw_r),
-        .draw_g(draw_g),
-        .draw_b(draw_b),
+        .draw_r(draw_r_normal),
+        .draw_g(draw_g_normal),
+        .draw_b(draw_b_normal),
         .curr_x(curr_x),
         .curr_y(curr_y)
     );
+    
+    // "You Win!" screen ROM (400x100)
+    reg [15:0] win_pixel_addr;
+    wire [11:0] win_pixel; 
+    reg [3:0] draw_r_reg, draw_g_reg, draw_b_reg;
+    assign draw_r = draw_r_reg;
+    assign draw_g = draw_g_reg;
+    assign draw_b = draw_b_reg;
+    
+    always @(posedge clk) begin
+        if (win) begin
+            // Display the "YOU WIN!" image centered at (120, 200)
+            if (curr_y >= 200 && curr_y < 300 && curr_x >= 120 && curr_x < 520) begin
+                win_pixel_addr <= (curr_y - 200) * 400 + (curr_x - 120);
+                draw_r_reg <= win_pixel[11:8];
+                draw_g_reg <= win_pixel[7:4];
+                draw_b_reg <= win_pixel[3:0];
+            end else begin
+                draw_r_reg <= 4'd0;
+                draw_g_reg <= 4'd0;
+                draw_b_reg <= 4'd0;
+            end
+        end else begin
+            draw_r_reg <= draw_r_normal;
+            draw_g_reg <= draw_g_normal;
+            draw_b_reg <= draw_b_normal;
+        end
+    end
+    
+    you_win_rom win_screen_inst (
+        .addra(win_pixel_addr),
+        .clka(clk),
+        .douta(win_pixel)
+    );
+
 
     vga vga_inst (
         .clk(pixclk),
