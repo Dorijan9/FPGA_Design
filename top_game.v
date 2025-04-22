@@ -8,20 +8,18 @@ module top_game(
     output [3:0] pix_g,
     output [3:0] pix_b,
     output hsync,
-    output vsync
+    output vsync,
+    output reg a, b, c, d, e, f, g               
 );
 
     // === Block size constants ===
     parameter BLK_SIZE_X = 100;
     parameter BLK_SIZE_Y = 100;
 
+
     // === Pixel clock ===
     wire pixclk;
     clk_wiz_0 pll (.clk_out1(pixclk), .clk_in1(clk));
-
-    reg heart_collected;
-    reg heart_collected_l1, heart_collected_l2, heart_collected_l3;
-
 
     // === Game clock ===
     reg [20:0] clk_div;
@@ -39,7 +37,6 @@ module top_game(
     end
 
     // === Level tracking ===
-    reg [1:0] prev_level_select;
     wire level_complete;
     wire [7:0] score;
 
@@ -64,13 +61,41 @@ module top_game(
     );
 
 
-    score_counter score_counter_inst (
+    score_counter score_logic (
         .clk(game_clk),
         .rst(rst),
-        .level_complete(level_complete),
-        .heart_collected(heart_collected),
+        .level_select(level_select),
+        .player_row(current_row),
+        .player_col(current_col),
         .score(score)
     );
+
+
+   
+    always @(*) begin
+        case (score)
+            8'd0: begin
+                // All segments ON
+                a = 0; b = 0; c = 0; d = 0; e = 0; f = 0; g = 1;
+            end
+            8'd1: begin
+                // All ON except b and c
+                a = 1; b = 0; c = 0; d = 1; e = 1; f = 1; g = 1;
+            end
+            8'd2: begin
+                // Only c and f ON
+                a = 0; b = 0; c = 1; d = 0; e = 0; f = 1; g = 0;
+            end
+            8'd3: begin
+                // Only e and f ON
+                a = 0; b = 0; c = 0; d = 0; e = 1; f = 1; g = 0;
+            end
+            default: begin
+                // Blank all segments
+                a = 0; b = 0; c = 0; d = 0; e = 0; f = 0; g = 0;
+            end
+        endcase
+    end
 
     // === Level metadata ===
     wire [9:0] TILE_W1, TILE_H1, WALL_MARGIN1;
@@ -156,35 +181,8 @@ module top_game(
                 4'b0100: if (!(wall_curr_mux[0] && x_in_tile + BLK_SIZE_X >= TILE_W - WALL_MARGIN || wall_adj_mux[1] && x_in_tile + BLK_SIZE_X >= TILE_W - WALL_MARGIN)) blkpos_x <= blkpos_x + 2;
             endcase
         end
-        
-        // Detect heart collection
-        heart_collected = 1'b0;
-        
-        if (level_select == 2'd0 && current_row == 5'd4 && current_col == 5'd4 && !heart_collected_l1) begin
-            heart_collected = 1'b1;
-            heart_collected_l1 = 1'b1;
-        end else if (level_select == 2'd1 && current_row == 5'd0 && current_col == 5'd0 && !heart_collected_l2) begin
-            heart_collected = 1'b1;
-            heart_collected_l2 = 1'b1;
-        end else if (level_select == 2'd2 && current_row == 5'd2 && current_col == 5'd4 && !heart_collected_l3) begin
-            heart_collected = 1'b1;
-            heart_collected_l3 = 1'b1;
-        end 
     end
 
-    always @(posedge game_clk or posedge rst) begin
-    if (rst) begin
-        heart_collected_l1 <= 0;
-        heart_collected_l2 <= 0;
-        heart_collected_l3 <= 0;
-    end else if (rst) begin
-            prev_level_select <= 2'd0;
-        end else begin
-            prev_level_select <= level_select;
-        end
-    end
-
-    assign level_complete = (level_select != prev_level_select);
 
     // === VGA draw ===
     wire [3:0] draw_r, draw_g, draw_b;
@@ -255,5 +253,4 @@ module top_game(
         .hsync(hsync),
         .vsync(vsync)
     );
-
 endmodule
