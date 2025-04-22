@@ -4,12 +4,6 @@
 
 This project implements a fully functional **tile-based VGA maze game** on FPGA using Verilog. It supports level switching, heart collectibles, score tracking, and 7-segment display integration. The game runs on a Xilinx Basys 3 development board and renders graphics in real-time on a 640×480 VGA display.
 
-##  Gameplay Preview
-
-![Level Screenshot](Game.jpeg)
-
----
-
 ##  Game Features
 
 - **Multiple maze levels** with distinct ROM designs
